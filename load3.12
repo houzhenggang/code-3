@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+# nic.sh
+#
+# Copyright (C) SINA Corporation
+# 
+
+
+function intr_list() {
+    local iface=$1
+    local driver=$2
+
+    case $driver in
+	igb|ixgbe|bnx2|tg3)
+	    intr_pattern $IFACE $DRIVER | xargs -i grep {} /proc/interrupts | grep -o "^ *[0-9]*" | xargs -i echo {};;
+    esac
+}
+
+function cpuid_to_mask() {
+    local id=$1
+    echo $((10**(id/4) * 2**(id%4)))
+}
+
+##################################################
+# Main part starts here
+
+echo "UID: $UID"
+if [[ ! "$UID" = 0 ]]; then
+    err_msg "This script must be run as ROOT"
+fi
+
+echo "option: $option, OPTARG: $OPTARG"
+while getopts i:h option
+do
+    case "$option" in
+        i)
+            IFACE=$OPTARG;;
+        h|\?)
+	    print_usage;;
+    esac
+done
+
+echo ""
+if [[ -z $IFACE ]]; then
+    print_usage
+fi
+
+# Sanity checks on the interface given
+if ! ifconfig $IFACE > /dev/null 2>&1; then
+    err_msg "$IFACE not available... please double check"
+fi
+if ! ip link show $IFACE | grep UP > /dev/null 2>&1; then
+    err_msg "$IFACE not up... please double check"
+fi
+
+# Check the driver of the interface
+DRIVER=$(ethtool -i $IFACE 2>/dev/null | grep driver | egrep -o "[a-zA-Z0-9_]+$")
+if [[ -z $DRIVER ]] || [[ ! -n "${TESTED_DRIVERS[$DRIVER]}" ]]; then
+    err_msg "We have not tested on $IFACE (driver: $DRIVER) and not sure how to configure it yet. Consider choosing another?"
+fi
+
+# Check the model of the interface
+BUS=$(ethtool -i $IFACE 2>/dev/null | grep bus-info | egrep -o "[0-9a-f]+:[0-9a-f]+\.[0-9a-f]+")
+MODEL=$(lspci | grep $BUS | sed "s/$BUS //g" | sed "s/Ethernet controller: //g")
+if ! tested "$IFACE" "$MODEL"; then
+    warn_msg "We have not tested specifically on \"$MODEL\""
+    warn_msg "We'll try configuring $IFACE in the way we have done on NICs supported by $DRIVER..."
