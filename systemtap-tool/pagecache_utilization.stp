@@ -1,0 +1,70 @@
+global io_stat, blk_stat
+global RD_CNT=2, WR_CNT=3
+
+probe vfs.read.return {
+  if ($return>0 && devname!="N/A") {
+      io_stat[devname, 0] += $return
+      io_stat[devname, RD_CNT] ++;
+  }
+}
+
+probe ioblock.request {
+  blk_stat[devname, rw] += size
+  blk_stat[devname, rw+RD_CNT] ++;
+} 
+
+probe vfs.write.return {
+  if ($return>0 && devname!="N/A") {
+      io_stat[devname, 1] += $return
+      io_stat[devname, WR_CNT] ++;
+  }
+}
+
+global _io,_blk
+
+probe timer.ms(5000) { 
+
+foreach ([devname, action] in io_stat)
+{
+        _io[action] += io_stat[devname, action];
+        _blk[action] += blk_stat[devname, action]
+}
+
+  if (_io[0] + _io[1]) {
+
+    printf("\n%-25s, %s%db/%d, %s%db/%d, %s%db/%d, %s%db/%d, %s%d%%\n\n",
+           ctime(gettimeofday_s()),
+           "IO Read:", _io[0], _io[RD_CNT],
+           "IO Write:", _io[1],_io[WR_CNT], 
+           "Blk Read:", _blk[0], _blk[RD_CNT], 
+           "Blk Write:", _blk[1],_blk[WR_CNT], 
+           "PCMR:", (_blk[0]+_blk[1]) * 100 / (_io[0] + _io[1]))
+
+        delete _io
+        delete _blk
+    
+    /* print header */
+    printf("%8s %2s %19s %19s %5s\n",
+           "DEVICE","T", "IO", "BLK", "PCMR")
+  }
+
+  /* print top ten I/O */
+  foreach ([devname, action] in io_stat- limit 10)
+     if(action < RD_CNT) 
+        printf("%8s %2s %11db/%6d %11db/%6d %4d%%\n",
+           devname, action?"W":"R",
+           io_stat[devname, action],io_stat[devname, action+RD_CNT],
+           blk_stat[devname, action],blk_stat[devname, action+RD_CNT],
+           (blk_stat[devname, action] * 100) / io_stat[devname, action]
+           )
+
+  /* clear data */
+  delete io_stat
+  delete blk_stat
+}
+
+probe begin
+{
+println(":Get information from: http://blog.yufeng.info/archives/1363 ");
+println("good luck")
+}
