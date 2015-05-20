@@ -1,0 +1,35 @@
+%{
+#include <linux/textsearch.h>
+%}
+function test_textsearch:long (algo:string) %{ /* pure */ /* unprivileged */
+struct ts_config* ts;
+struct ts_state state;
+
+ts = textsearch_prepare(THIS->algo, "world", 5, GFP_KERNEL, TS_AUTOLOAD);
+if(IS_ERR(ts)) goto err;
+_stp_printf("%s\n", "prepare ok!");
+if(UINT_MAX==textsearch_find_continuous(ts, &state, "hello world", 11)) goto err;
+_stp_printf("%s\n", "find ok!");
+textsearch_destroy(ts);
+THIS->__retvalue = 0;
+return;
+err:
+_stp_printf("%s\n", "init error!");
+THIS->__retvalue = -1;
+return;
+%}
+
+probe begin
+{
+println("More information: http://blog.yufeng.info/archives/826 ")
+println("Usage: stap -gu *.stp bm")
+println("result:%d\n", test_textsearch(@1));
+exit();
+}
+
+//请注意我们上面用到了 _stp_printf，代替printk, 这个是stap的runtime的基础服务。
+
+# stap -gu ts.stp bm %%我们用的是BM算法
+//prepare ok!
+//find ok!
+//result:0
