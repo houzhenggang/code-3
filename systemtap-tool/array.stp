@@ -1,0 +1,16 @@
+global odds
+probe begin{
+printf("probe begin\n");
+odds["123", "jack", 10]=2;
+odds["456", "tom", 11]=3;
+
+exit();
+}
+
+probe end{
+foreach ([x, y, z] in odds) {
+printf("odds[%s, %s, %d] =%d\n",x, y, z, odds[x, y, z]);
+}
+
+printf("end\n")
+}
