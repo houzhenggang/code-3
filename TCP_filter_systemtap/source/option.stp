@@ -1,0 +1,165 @@
+
+%{
+     #include <linux/types.h>
+
+     int stap_filter = 0;
+     u32 stap_laddr, stap_laddr_mask;
+     u32 stap_raddr, stap_raddr_mask;
+     u32 stap_lport, stap_rport;
+%}
+
+function process_cmdline:long ()
+{
+     for (i = 1; i <= argc; i++) {
+   
+          return init_filter(i)
+     }
+
+     return 0
+}
+
+function init_filter:long (idx:long)
+{
+     if (idx > argc || idx < 1)
+          return 0
+
+     local = tokenize(argv[idx], "-")
+     argv[idx] = ""
+     remote = tokenize(argv[idx], "-")
+
+     local_addr = tokenize(local, ":")
+     local = ""
+     local_port = tokenize(local, ":")
+
+     remote_addr = tokenize(remote, ":")
+     remote = ""
+     remote_port = tokenize(remote, ":")
+	
+
+     laddr = ipv4_pton(local_addr, 0)
+     laddr_mask = ipv4_pton(local_addr, 1)
+     lport = ipv4_portton(local_port)
+
+     raddr = ipv4_pton(remote_addr, 0)
+     raddr_mask = ipv4_pton(remote_addr, 1)
+     rport = ipv4_portton(remote_port)
+
+
+
+     if (laddr < 0 || laddr_mask < 0 ||
+          raddr < 0 || raddr_mask < 0 ||
+          lport < 0 || rport < 0)
+          return -1
+     
+	 set_filter(laddr, laddr_mask, lport,
+          raddr, raddr_mask, rport)
+
+     return 0
+}
+
+function test()
+{
+	printf("stap_filter =%d\n",stap_filter)
+	printf("stap_laddr =%d\n",stap_laddr)
+	printf("stap_lport =%d\n",stap_lport)
+	printf("stap_laddr_mask  =%d\n",stap_laddr_mask)
+	printf("stap_raddr =%d\n",stap_raddr)
+	printf("stap_raddr_mask  =%d\n",stap_raddr_mask)
+	printf("stap_rport   =%d\n", stap_rport)
+
+}
+
+function set_filter (laddr:long, laddr_mask:long, lport:long,
+     raddr:long, raddr_mask:long, rport:long)
+%{
+     stap_filter = 1;
+     stap_laddr = STAP_ARG_laddr;
+     stap_laddr_mask = STAP_ARG_laddr_mask;
+     stap_lport = STAP_ARG_lport;
+     stap_raddr = STAP_ARG_raddr;
+     stap_raddr_mask = STAP_ARG_raddr_mask;
+     stap_rport = STAP_ARG_rport;
+%}
+
+
+function ipv4_pton:long (addr:string, make_mask:long)
+{
+     i = 32
+     ip = 0
+     ips = addr
+
+     while (strlen(byte = tokenize(ips, ".")) != 0) {
+          i -= 8
+          ips = ""
+
+          if (byte == "*") {
+               byte = "0"
+          } else if (make_mask)
+               byte = "255"
+
+          j = strtol(byte, 10)
+          if (j > 255)
+               return -1
+
+          ip = ip + (j << i)
+     }
+
+     if (i != 0)
+          return -1
+
+     return ip
+}
+
+
+function ipv4_portton:long (port:string)
+{
+     if (port == "*")
+          port = "0"
+
+     pport = strtol(port, 10)
+     if (pport > 0xffff)
+          return -1
+
+     return pport
+}
+
+
+function filter:long (sk:long)
+{
+     laddr = tcpmib_local_addr(sk)
+     lport = tcpmib_local_port(sk)
+     raddr = tcpmib_remote_addr(sk)
+     rport = tcpmib_remote_port(sk)
+
+//	printf("laddr =%u lport =%u raddr =%d rport=%u\n",laddr, lport, raddr, rport)
+//	printf("stap_laddr =%u stap_lport =%u stap_raddr =%d stap_rport=%u\n",%{stap_laddr%}, %{stap_lport%}, %{stap_raddr%}, %{stap_rport%})
+
+	  	return do_filter(laddr, lport, raddr, rport)
+	
+}
+
+function do_filter:long (laddr:long, lport:long,
+     raddr:long, rport:long)
+%{
+     int local_valid = 0;
+     int remote_valid = 0;
+
+     if (!stap_filter) {
+          STAP_RETVALUE = 1;
+          return;
+     }
+
+     // filter local ip and local port
+     if ((STAP_ARG_laddr & stap_laddr_mask) == stap_laddr) {
+          if (!stap_lport || (STAP_ARG_lport == stap_lport))
+               local_valid = 1;
+     }
+
+     // filter remote ip and remote port
+     if ((STAP_ARG_raddr & stap_raddr_mask) == stap_raddr) {
+          if (!stap_rport || (STAP_ARG_rport == stap_rport))
+               remote_valid = 1;
+     }
+
+     STAP_RETVALUE = (local_valid && remote_valid);
+%}

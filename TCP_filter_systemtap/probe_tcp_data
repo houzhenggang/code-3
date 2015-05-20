@@ -1,0 +1,34 @@
+#!/bin/bash
+SRCDIR=source 
+FILTER=$1
+
+function usage()
+{
+		echo "USAGE:"
+		echo "./probe_tcp_data -f *.*.*.*:*-10.75.21.222:*"
+}
+
+if [ $# -ne 1 ]; then
+		usage $0
+		exit 0
+fi
+
+
+stap -v  -w -t -g -k -I $SRCDIR -e '
+probe begin 
+{
+	printf("probe begin\n")
+	if (process_cmdline() < 0)
+		exit()
+}
+
+probe Rcv.* {}
+
+
+probe end
+{
+	
+	printf("\n\nprobe end\n")
+}
+' $FILTER
+

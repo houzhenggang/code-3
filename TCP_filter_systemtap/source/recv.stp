@@ -1,0 +1,66 @@
+
+
+probe Rcv.data1 =
+	 kernel.function("tcp_prequeue")
+{
+
+
+     if (!filter($sk)) next
+
+	 printf("TCP Recv data: tcp_prequeue\n")
+    // do_Rcv_data($sk,$skb)     
+}
+
+probe Rcv.data2 =
+     kernel.function("tcp_v4_do_rcv")
+{
+
+
+     if (!filter($sk)) next
+
+	 printf("TCP Recv data: tcp_v4_do_rcv\n")
+    // do_Rcv_data($sk,$skb)     
+}
+
+
+probe Rcv.data3 =
+	 kernel.function("sk_add_backlog")
+{
+
+
+     if (!filter($sk)) next
+
+	 printf("TCP Recv data: sk_add_backlog\n")
+    // do_Rcv_data($sk,$skb)     
+}
+
+
+probe Rcv.data4 =
+	 kernel.function("tcp_rcv_established")
+{
+
+
+     if (!filter($sk)) next
+
+	 printf("TCP Recv data: tcp_rcv_established\n")
+    // do_Rcv_data($sk,$skb)     
+}
+
+probe Rcv.data5 =
+	 kernel.function("tcp_ack")
+{
+
+
+     if (!filter($sk)) next
+
+	 printf("TCP Recv data: tcp_ack\n")
+    // do_Rcv_data($sk,$skb)     
+}
+
+
+
+function do_Rcv_data(sk:long, skb:long)
+%{
+	
+%}
+
