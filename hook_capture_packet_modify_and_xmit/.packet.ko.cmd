@@ -1,0 +1,1 @@
+cmd_/data1/mouxuan/ceshi/code/code/hook_capture_packet/packet.ko := cp /data1/mouxuan/ceshi/code/code/hook_capture_packet/packet.ko.unsigned /data1/mouxuan/ceshi/code/code/hook_capture_packet/packet.ko
