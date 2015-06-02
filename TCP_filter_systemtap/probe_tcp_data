@@ -5,11 +5,11 @@ FILTER=$1
 function usage()
 {
 		echo "USAGE:"
-		echo "./probe_tcp_data -f *.*.*.*:*-10.75.21.222:*"
+		echo "./probe_tcp_data  *.*.*.*:*-10.75.21.222:*"
 }
 
 if [ $# -ne 1 ]; then
-		usage $0
+		usage 
 		exit 0
 fi
 
