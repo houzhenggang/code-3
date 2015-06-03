@@ -1,0 +1,64 @@
+
+
+log=$1
+RESULT=$2
+date
+sort -n -k 8  $log > percentile_temp_data_sort-1.log
+sed -n '/Local/p' percentile_temp_data_sort-1.log > percentile_temp_data_sort.log
+#cat percentile_temp_data_sort.log
+line_number=$(wc -l percentile_temp_data_sort.log |awk '{print $1}')
+echo $line_number
+temp_number=`expr $line_number / 10`
+echo $temp_number
+
+
+
+array_name=(1th 10th 20th 30th 40th 50th 60th 70th 80th 90th )
+#for i in {0..9}
+#do 
+#	echo ${array_name[$i]}
+#done
+
+array_name_data=(1th 10th 20th 30th 40th 50th 60th 70th 80th 90th)
+
+temp_line=1
+
+array_name_data[0]=$(awk 'NR==1{print $8}' percentile_temp_data_sort.log)
+echo "---------------data-perctntile-------------" >> $RESULT
+echo "${array_name[0]}   ${array_name_data[0]}" >> $RESULT
+
+for i in {1..9}
+do
+	temp=`expr $i \* $temp_number`
+
+	array_name_data[$i]=$(awk 'NR=='$temp' {print $8}' percentile_temp_data_sort.log)
+
+	echo "${array_name[$i]}  ${array_name_data[$i]}" >> $RESULT
+done
+
+
+echo "---------------time-perctntile-------------" >> $RESULT
+
+sort -n -k 10  $log > percentile_temp_data_sort-1.log
+sed -n '/Local/p' percentile_temp_data_sort-1.log > percentile_temp_data_sort.log
+#cat percentile_temp_data_sort.log
+
+array_name_data[0]=$(awk 'NR==1{print $10}' percentile_temp_data_sort.log)
+
+echo "${array_name[0]}   ${array_name_data[0]}" >> $RESULT
+
+for i in {1..9}
+do
+	temp=`expr $i \* $temp_number`
+
+	array_name_data[$i]=$(awk 'NR=='$temp' {print $10}' percentile_temp_data_sort.log)
+
+	echo "${array_name[$i]}  ${array_name_data[$i]}" >> $RESULT
+done
+
+date
+rm -f percentile_temp_data_sort.log
+rm -f percentile_temp_data_sorti-1.log
+
+
+
