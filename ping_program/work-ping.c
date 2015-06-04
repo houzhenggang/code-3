@@ -79,7 +79,24 @@ int pack(int pack_no)
 }
 /*发送三个ICMP报文*/
 void send_packet()
-{       int packetsize;
+{ 
+		struct hostent *host;
+		const char *dstip_name = "www.csdn.net"; //"www.baidu.com";
+
+		if((host=gethostbyname(dstip_name ))==NULL) /*是主机名*/
+          {       perror("gethostbyname error");
+                        exit(1);
+           }
+				printf ("gethostbyname\n");
+                memcpy( (char *)&dest_addr.sin_addr,host->h_addr,host->h_length);
+
+        /*获取main的进程id,用于设置ICMP的标志符*/
+        pid=getpid();
+        printf("PING %s(%s): %d bytes data in ICMP packets.\n",dstip_name ,
+                        inet_ntoa(dest_addr.sin_addr),datalen);
+		
+
+		int packetsize;
         while( nsend<MAX_NO_PACKETS)
         {       nsend++;
                 packetsize=pack(nsend); /*设置ICMP报头*/
@@ -140,13 +157,17 @@ int unpack(char *buf,int len)
         }
         else    return -1;
 }
+
 main(int argc,char *argv[])
-{       struct hostent *host;
+{       //struct hostent *host;
         struct protoent *protocol;
         unsigned long inaddr=0l;
         int waittime=MAX_WAIT_TIME;
         int size=50*1024;
-        if(argc<2)
+	
+		//const char *dstip_name = "www.baidu.com";
+
+        if(argc<1)
         {       printf("usage:%s hostname/IP address\n",argv[0]);
                 exit(1);
         }
@@ -167,19 +188,22 @@ main(int argc,char *argv[])
         bzero(&dest_addr,sizeof(dest_addr));
         dest_addr.sin_family=AF_INET;
         /*判断是主机名还是ip地址*/
-        if( inaddr=inet_addr(argv[1])==INADDR_NONE)
-        {       if((host=gethostbyname(argv[1]) )==NULL) /*是主机名*/
-                {       perror("gethostbyname error");
-                        exit(1);
-                }
-                memcpy( (char *)&dest_addr.sin_addr,host->h_addr,host->h_length);
-        }
-        else    /*是ip地址*/
-                memcpy( (char *)&dest_addr,(char *)&inaddr,host->h_length);
+        //if( inaddr=inet_addr(argv[1])==INADDR_NONE) {     
+		
+		//if((host=gethostbyname(dstip_name ))==NULL) /*是主机名*/
+        //  {       perror("gethostbyname error");
+        //               exit(1);
+        //   }
+		//		printf ("gethostbyname\n");
+        //        memcpy( (char *)&dest_addr.sin_addr,host->h_addr,host->h_length);
+
         /*获取main的进程id,用于设置ICMP的标志符*/
-        pid=getpid();
-        printf("PING %s(%s): %d bytes data in ICMP packets.\n",argv[1],
-                        inet_ntoa(dest_addr.sin_addr),datalen);
+       // pid=getpid();
+       // printf("PING %s(%s): %d bytes data in ICMP packets.\n",dstip_name ,
+        //                inet_ntoa(dest_addr.sin_addr),datalen);
+		//
+		//
+		//
         send_packet();  /*发送所有ICMP报文*/
         recv_packet();  /*接收所有ICMP报文*/
         statistics(SIGALRM); /*进行统计*/
