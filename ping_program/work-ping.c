@@ -31,12 +31,36 @@ void recv_packet(void);
 int unpack(char *buf,int len);
 void tv_sub(struct timeval *out,struct timeval *in);
 
+char *dstip_name[] = {"www.csdn.net", "www.baidu.com", "www.weibo.com"};
+int dstip_number = 0 ;
+int calculate_dstip_number(char *name[]) ;
+
+enum{
+		INDX_CSDN = 1,
+		INDX_BAIDU,
+		INDX_WEIBO
+};
+
+
 void statistics(int signo)
 {       printf("\n--------------------PING statistics-------------------\n");
         printf("%d packets transmitted, %d received , %%%d lost\n",nsend,nreceived,
                         (nsend-nreceived)/nsend*100);
         close(sockfd);
 }
+
+int calculate_dstip_number(char *name[])
+{	
+		char **p = name;
+		int len = 0 ;
+		while (*p != NULL){
+			len++ ;
+			p++;
+		}
+
+		return len ;
+}
+
 
 /*校验和算法*/
 unsigned short cal_chksum(unsigned short *addr,int len)
@@ -81,32 +105,40 @@ int pack(int pack_no)
 void send_packet()
 { 
 		struct hostent *host;
-		const char *dstip_name = "www.csdn.net"; //"www.baidu.com";
+		 //char *dstip_name[] = {"www.csdn.net", "www.baidu.com"};
+		char **temp_name = dstip_name;
+		while (temp_name <dstip_name + dstip_number  ){
 
-		if((host=gethostbyname(dstip_name ))==NULL) /*是主机名*/
+		if((host=gethostbyname(*temp_name ))==NULL) /*是主机名*/
           {       perror("gethostbyname error");
                         exit(1);
            }
-				printf ("gethostbyname\n");
-                memcpy( (char *)&dest_addr.sin_addr,host->h_addr,host->h_length);
+				//printf ("gethostbyname\n");
+          memcpy( (char *)&dest_addr.sin_addr,host->h_addr,host->h_length);
 
         /*获取main的进程id,用于设置ICMP的标志符*/
         pid=getpid();
-        printf("PING %s(%s): %d bytes data in ICMP packets.\n",dstip_name ,
+        printf("PING %s(%s): %d bytes data in ICMP packets.\n",*temp_name ,
                         inet_ntoa(dest_addr.sin_addr),datalen);
 		
 
 		int packetsize;
-        while( nsend<MAX_NO_PACKETS)
-        {       nsend++;
-                packetsize=pack(nsend); /*设置ICMP报头*/
+		int temp_nsend = 0 ;
+        while( temp_nsend<MAX_NO_PACKETS)
+        {       temp_nsend++;
+                packetsize=pack(temp_nsend); /*设置ICMP报头*/
                 if( sendto(sockfd,sendpacket,packetsize,0,
                           (struct sockaddr *)&dest_addr,sizeof(dest_addr) )<0  )
                 {       perror("sendto error");
                         continue;
                 }
+
+				nsend++;
                 //sleep(1); /*每隔一秒发送一个ICMP报文*/
         }
+		
+		temp_name ++ ;
+	}//end while(*temp)
 }
 /*接收所有ICMP报文*/
 void recv_packet()
@@ -114,7 +146,7 @@ void recv_packet()
         extern int errno;
         signal(SIGALRM,statistics);
         fromlen=sizeof(from);
-        while( nreceived<nsend)
+        while( nreceived<nsend )
         {       alarm(MAX_WAIT_TIME); //阻塞式系统调用，防止进程无限等待下去
                 if( (n=recvfrom(sockfd,recvpacket,sizeof(recvpacket),0,
                                 (struct sockaddr *)&from,&fromlen)) <0)
@@ -154,6 +186,9 @@ int unpack(char *buf,int len)
                         icmp->icmp_seq,
                         ip->ip_ttl,
                         rtt);
+
+				//根据ip地址不同 分别记录
+				//record()
         }
         else    return -1;
 }
@@ -187,26 +222,18 @@ main(int argc,char *argv[])
         setsockopt(sockfd,SOL_SOCKET,SO_RCVBUF,&size,sizeof(size) );
         bzero(&dest_addr,sizeof(dest_addr));
         dest_addr.sin_family=AF_INET;
-        /*判断是主机名还是ip地址*/
-        //if( inaddr=inet_addr(argv[1])==INADDR_NONE) {     
-		
-		//if((host=gethostbyname(dstip_name ))==NULL) /*是主机名*/
-        //  {       perror("gethostbyname error");
-        //               exit(1);
-        //   }
-		//		printf ("gethostbyname\n");
-        //        memcpy( (char *)&dest_addr.sin_addr,host->h_addr,host->h_length);
+        
+		/*计算有多少 ip 地址*/
+		dstip_number = calculate_dstip_number(dstip_name);
 
-        /*获取main的进程id,用于设置ICMP的标志符*/
-       // pid=getpid();
-       // printf("PING %s(%s): %d bytes data in ICMP packets.\n",dstip_name ,
-        //                inet_ntoa(dest_addr.sin_addr),datalen);
-		//
-		//
-		//
-        send_packet();  /*发送所有ICMP报文*/
+		//printf("csdn =%d\n",INDX_CSDN);
+
+		send_packet();  /*发送所有ICMP报文*/
+		printf("nsend = %d sockfd =%d\n",nsend, sockfd);
         recv_packet();  /*接收所有ICMP报文*/
         statistics(SIGALRM); /*进行统计*/
+
+		//close(sockfd);
         return 0;
 }
 /*两个timeval结构相减*/
