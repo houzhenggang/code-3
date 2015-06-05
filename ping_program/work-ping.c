@@ -32,8 +32,10 @@ int unpack(char *buf,int len);
 void tv_sub(struct timeval *out,struct timeval *in);
 
 char *dstip_name[] = {"www.csdn.net", "www.baidu.com", "www.weibo.com"};
+char *dstip_name_sin_addr[3];
 int dstip_number = 0 ;
 int calculate_dstip_number(char *name[]) ;
+void record_info(char *addr, double rtt) ;
 
 enum{
 		INDX_CSDN = 1,
@@ -188,10 +190,34 @@ int unpack(char *buf,int len)
                         rtt);
 
 				//根据ip地址不同 分别记录
-				//record()
+				record_info(inet_ntoa(from.sin_addr), rtt);
         }
         else    return -1;
 }
+
+void record_info(char *addr,double rtt)
+{	
+		char **p = dstip_name;
+		struct hostent *host;
+		struct sockaddr_in dst_addr;
+		char *temp;
+		while (*p != NULL){
+			host = gethostbyname(*p);
+			memcpy((char *)&dst_addr.sin_addr, host->h_addr, host->h_length);
+			temp = inet_ntoa(dst_addr.sin_addr);
+			if(addr == temp ){
+				 printf("PING %s( temp= %s)  addr =%s  bytes data in ICMP packets.\n",*p ,
+                        temp,addr);
+
+				 break;
+			}
+			p++;
+
+		}
+
+
+}
+
 
 main(int argc,char *argv[])
 {       //struct hostent *host;
@@ -233,7 +259,7 @@ main(int argc,char *argv[])
         recv_packet();  /*接收所有ICMP报文*/
         statistics(SIGALRM); /*进行统计*/
 
-		//close(sockfd);
+		close(sockfd);
         return 0;
 }
 /*两个timeval结构相减*/
