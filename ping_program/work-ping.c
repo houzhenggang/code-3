@@ -31,23 +31,45 @@ void recv_packet(void);
 int unpack(char *buf,int len);
 void tv_sub(struct timeval *out,struct timeval *in);
 
-char *dstip_name[] = {"www.csdn.net", "www.baidu.com", "www.weibo.com"};
-char *dstip_name_sin_addr[3];
-int dstip_number = 0 ;
-int calculate_dstip_number(char *name[]) ;
-void record_info(char *addr, double rtt) ;
-
 enum{
 		INDX_CSDN = 1,
 		INDX_BAIDU,
 		INDX_WEIBO
 };
 
+struct ping_info{
+	double rtt;
+	int loss;
+	int send;
+	int recv;
+	char * ip;
+	char * hostname;
+};
+
+char *dstip_name[] = {"www.csdn.net", "www.baidu.com", "www.weibo.com"};
+char *dstip_name_sin_addr[3];
+int dstip_number = 0 ;
+int calculate_dstip_number(char *name[]) ;
+void record_info(char *addr, double rtt) ;
+struct ping_info pinginfo[3];
+
+
 
 void statistics(int signo)
 {       printf("\n--------------------PING statistics-------------------\n");
         printf("%d packets transmitted, %d received , %%%d lost\n",nsend,nreceived,
                         (nsend-nreceived)/nsend*100);
+		int i;
+		for(i=0; i<3; i++){
+		pinginfo[i].loss = pinginfo[i].send - pinginfo[i].recv;
+		pinginfo[i].rtt /= 3;
+		
+		 printf(" %s\n ip= %s, avg = %f loss =%d send =%d recv =%d \n",pinginfo[i].hostname ,
+                        pinginfo[i].ip, pinginfo[i].rtt, pinginfo[i].loss, pinginfo[i].send,
+						pinginfo[i].recv);
+		
+		}
+
         close(sockfd);
 }
 
@@ -200,21 +222,34 @@ void record_info(char *addr,double rtt)
 		char **p = dstip_name;
 		struct hostent *host;
 		struct sockaddr_in dst_addr;
+		char *temp_addr = (char *)malloc(sizeof(addr));
 		char *temp;
+		int num = 0 ;
+	
+		strcpy(temp_addr, addr);
 		while (*p != NULL){
 			host = gethostbyname(*p);
 			memcpy((char *)&dst_addr.sin_addr, host->h_addr, host->h_length);
 			temp = inet_ntoa(dst_addr.sin_addr);
-			if(addr == temp ){
+			if(!strcmp(temp, temp_addr)){
 				 printf("PING %s( temp= %s)  addr =%s  bytes data in ICMP packets.\n",*p ,
                         temp,addr);
+				 pinginfo[num].rtt += rtt;
+			     pinginfo[num].recv += 1;
+				 pinginfo[num].send = 3;
+				 if(pinginfo[num].ip == NULL)
+				 	pinginfo[num].ip = temp;
+				  if(pinginfo[num].hostname == NULL)
+				 	pinginfo[num].hostname = *p;
 
+				
 				 break;
 			}
+			num++;
 			p++;
 
 		}
-
+ printf("PING test 22  %s \n",addr);
 
 }
 
@@ -271,3 +306,4 @@ void tv_sub(struct timeval *out,struct timeval *in)
         out->tv_sec-=in->tv_sec;
 }
 /*------------- The End -----------*/
+
