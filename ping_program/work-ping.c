@@ -118,8 +118,8 @@ void send_packet()
 
         /*获取main的进程id,用于设置ICMP的标志符*/
         pid=getpid();
-        printf("PING %s(%s): %d bytes data in ICMP packets.\n",*temp_name ,
-                        inet_ntoa(dest_addr.sin_addr),datalen);
+       // printf("PING %s(%s): %d bytes data in ICMP packets.\n",*temp_name ,
+         //               inet_ntoa(dest_addr.sin_addr),datalen);
 		
 
 		int packetsize;
@@ -132,6 +132,9 @@ void send_packet()
                 {       perror("sendto error");
                         continue;
                 }
+
+			printf("sent %s(%s) %d bytes data in ICMP packets\n",*temp_name ,
+                        inet_ntoa(dest_addr.sin_addr),datalen);
 
 				nsend++;
                 //sleep(1); /*每隔一秒发送一个ICMP报文*/
@@ -180,12 +183,18 @@ int unpack(char *buf,int len)
                 tv_sub(&tvrecv,tvsend);  /*接收和发送的时间差*/
                 rtt=tvrecv.tv_sec*1000+tvrecv.tv_usec/1000;  /*以毫秒为单位计算rtt*/
                 /*显示相关信息*/
-                printf("%d byte from %s: icmp_seq=%u ttl=%d rtt=%.3f ms\n",
+               /* printf("recv %d byte from %s: icmp_seq=%u ttl=%d rtt=%.3f ms\n",
                         len,
                         inet_ntoa(from.sin_addr),
                         icmp->icmp_seq,
                         ip->ip_ttl,
+                        rtt);*/
+
+				 printf("recv %d from %s rtt %.3f ms\n",
+                        len,
+                        inet_ntoa(from.sin_addr),
                         rtt);
+
 
 				//根据ip地址不同 分别记录
 				//record()
