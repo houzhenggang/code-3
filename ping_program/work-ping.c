@@ -31,7 +31,7 @@ void recv_packet(void);
 int unpack(char *buf,int len);
 void tv_sub(struct timeval *out,struct timeval *in);
 
-char *dstip_name[] = {"www.csdn.net", "www.baidu.com", "www.weibo.com"};
+char *dstip_name[] = {"www.csdn.net", "www.baidu.com", "www.weibo.com", "114.112.73.194"};
 int dstip_number = 0 ;
 int calculate_dstip_number(char *name[]) ;
 
@@ -105,17 +105,22 @@ int pack(int pack_no)
 /*发送三个ICMP报文*/
 void send_packet()
 { 
-		struct hostent *host;
-		 //char *dstip_name[] = {"www.csdn.net", "www.baidu.com"};
-		char **temp_name = dstip_name;
-		while (temp_name <dstip_name + dstip_number  ){
-
+	struct hostent *host;
+	//char *dstip_name[] = {"www.csdn.net", "www.baidu.com"};
+	char **temp_name = dstip_name;
+	unsigned long inaddr=0l;
+	while (temp_name <dstip_name + dstip_number  ){
+	
+	if(inaddr= inet_addr(*temp_name) == INADDR_NONE){
 	if((host=gethostbyname(*temp_name ))==NULL) /*是主机名*/
           {       perror("gethostbyname error");
                         exit(1);
            }
 				//printf ("gethostbyname\n");
           memcpy( (char *)&dest_addr.sin_addr,host->h_addr,host->h_length);
+	}
+	else
+		inet_pton(AF_INET, *temp_name, &dest_addr.sin_addr);
 
         /*获取main的进程id,用于设置ICMP的标志符*/
         pid=getpid();
