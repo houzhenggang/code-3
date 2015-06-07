@@ -174,8 +174,13 @@ main(int argc,char *argv[])
                 }
                 memcpy( (char *)&dest_addr.sin_addr,host->h_addr,host->h_length);
         }
-        else    /*是ip地址*/
-                memcpy( (char *)&dest_addr,(char *)&inaddr,host->h_length);
+        else   { /*是ip地址*/
+                //memcpy( (char *)&dest_addr,(char *)&inaddr,host->h_length);
+		//dest_addr.sin_addr = *((struct in_addr*)host->h_addr);
+	
+	inet_pton(AF_INET, argv[1], &dest_addr.sin_addr);
+	}
+	printf("aaa\n");
         /*获取main的进程id,用于设置ICMP的标志符*/
         pid=getpid();
         printf("PING %s(%s): %d bytes data in ICMP packets.\n",argv[1],
