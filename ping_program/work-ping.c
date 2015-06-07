@@ -13,7 +13,7 @@
 #include <errno.h>
 #include <string.h>
 #define PACKET_SIZE     4096
-#define MAX_WAIT_TIME   5
+#define MAX_WAIT_TIME   10
 #define MAX_NO_PACKETS  3
 char sendpacket[PACKET_SIZE];
 char recvpacket[PACKET_SIZE];
@@ -45,8 +45,9 @@ enum{
 void statistics(int signo)
 {       printf("\n--------------------PING statistics-------------------\n");
         printf("%d packets transmitted, %d received , %%%d lost\n",nsend,nreceived,
-                        (nsend-nreceived)/nsend*100);
+                        (nsend-nreceived));
         close(sockfd);
+	exit(1);
 }
 
 int calculate_dstip_number(char *name[])
@@ -109,7 +110,7 @@ void send_packet()
 		char **temp_name = dstip_name;
 		while (temp_name <dstip_name + dstip_number  ){
 
-		if((host=gethostbyname(*temp_name ))==NULL) /*是主机名*/
+	if((host=gethostbyname(*temp_name ))==NULL) /*是主机名*/
           {       perror("gethostbyname error");
                         exit(1);
            }
