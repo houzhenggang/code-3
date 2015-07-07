@@ -43,6 +43,11 @@ def create(pid, gid):
             check_haystack(pid, gid)
 
             s2recovery.recover_group(pid, gid)
+            
+			#hash_files = get_hash_files(pid, gid)
+			#根据分区号（磁盘号），group id  获取文件名，存放在字典中
+			#{'069e6fabca59e1ba3db034950b88aa074708cf30-99532': #'/data6/064247da00014006a370842b2b0c0467/g553698/040/069e6fabca59e1ba3034950b88aa074708cf30-99532', #'8d226c5e0c78a66db32ba0c1d465564f87adc859-69639': #'/data6/064247da00014006a370842b2b0c0467/53698/289/8d226c5e0c78a66db32ba0c1d465564f87adc859-69639', 
+			#...}
 
             hash_files = get_hash_files(pid, gid)
             if len(hash_files) <= CREATE_HAYSTACK_LIMIT:
@@ -50,7 +55,7 @@ def create(pid, gid):
                 return
 
             create_haystack(pid, gid, hash_files)
-
+			#创建完haystack之后，删除小文件 
             delete_files( hash_files.values() )
             delete_empty_hash_folders(pid, gid)
 
@@ -83,7 +88,7 @@ def create_haystack(pid, gid, files):
     for fn, fpath in files.items():
 
         checksum = fn.split('-', 1)[0]
-
+		#一致性 检查
         try:
             s2recovery_util.check_file_consistent(fpath, checksum)
         except s2recovery_util.FileDamaged as e:
@@ -91,9 +96,11 @@ def create_haystack(pid, gid, files):
             raise group.FileDamaged ( ('pid', pid), ('gid', gid), ('fn', fn) )
 
     needle_list = create_needle_list(files)
+	#创建needle-list  格式如下 
+	#[{'file_names': ['069e6fabca59e1ba3db034950b88aa074708cf30-99532'], 'data_parts': [{'path': #'/data6/064247da00014006a370842b2b0c0467/g553698/040/069e6fabca59e1ba3db034950b88aa074708cf30-99532'#, 'size': 229, 'offset': 0}], 'key': #'\x06\x9eo\xab\xcaY\xe1\xba=\xb04\x95\x0b\x88\xaa\x07G\x08\xcf0'},
 
     hpath = get_haystack_path(pid, gid)
-    _mkdir(hpath)
+    _mkdir(hpath) #创建 haystack目录
 
     port = partition.pid_port(pid)
 
@@ -157,8 +164,10 @@ def create_needle_list(files):
 
         needle = { 'key': key, 'data_parts': parts,
                    'file_names': [ fn, ] }
-
+		
         needle_list.append(needle)
+		#(Pdb) p needle
+		#{'file_names': ['069e6fabca59e1ba3db034950b88aa074708cf30-99532'], 'data_parts': [{'path': #'/data6/064247da00014006a370842b2b0c0467/g553698/040/069e6fabca59e1ba3db034950b88aa074708cf30-99#532', 'size': 229, 'offset': 0}], 'key': #'\x06\x9eo\xab\xcaY\xe1\xba=\xb04\x95\x0b\x88\xaa\x07G\x08\xcf0'}
 
     return needle_list
 
@@ -340,7 +349,7 @@ def remerge_by_original_files(pid, gid):
     needle_list = create_needle_list(hash_files)
 
     hpath = get_haystack_path(pid, gid)
-    h = haystack.Haystack(hpath)
+    h = haystack.Haystack(hpath)  
     ver_num = h.get_latest_version_num()
 
     if ver_num is not None:
