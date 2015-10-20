@@ -1,0 +1,10 @@
+#!/bin/sh
+
+GIT=/usr/local/bin/git
+
+cmt=$($GIT log -n1 --no-merges --format="%H" "$1")
+short=${cmt:0:7}
+echo "commit : "$cmt
+echo "short  : "$short
+
+git-binb $cmt
