@@ -1,33 +1,48 @@
 #!/usr/bin/lua
-impl = {
-"dddd","sss",
-a=123,
-["wee"]="one",
-["two"]="linux"
+--[[
+local sum = {
+    one = {}
 }
 
-print("-------pairs------")
-for key, val in pairs(impl) do
+local mid = { a = 'fad',  b = 90}
+table.insert(sum.one, 'fadfaf')
+
+for key, val in pairs(sum.one) do
     print(key, val)
 end
-print("-------ipairs------")
-for key, val in ipairs(impl) do
+
+print("len = ", #sum.one)
+table.remove(sum.one, 1)
+print("------------------")
+print("len = ", #sum.one)
+for key, val in pairs(sum.one) do
     print(key, val)
 end
-print("-function with impl---")
-impl.get_print = function(impl, a, b)
-    --print("a and b",a,b)
-    return a,b
+
+print('==================')
+local xuan= {}
+xuan[ 1 ] = {mou = 'xuan' }
+xuan[ 2 ] = {mou = 'faf' }
+
+for _, h in ipairs( xuan ) do
+
+    print(_, h)
+    if h == 'xuan' then
+        print("xuan om")
+    end
+end
+--]]
+--
+--
+local mid = { }
+table.insert(mid , {num=1, size=2})
+table.insert(mid , {num=2, size=4})
+
+for key, val in ipairs(mid) do
+    print(key, val)
+    print('---------')
+    for ii, kk in pairs( val) do
+        print(ii, kk)
+    end
 end
 
-aa, bb = impl:get_print(1,2)
-print(aa, bb)
-
-print("-function without impl---")
-impl.get_print = function(a, b)
-    --print("a and b",a,b)
-    return a,b
-end
-
-aa, bb = impl.get_print(1,2)
-print(aa, bb)
